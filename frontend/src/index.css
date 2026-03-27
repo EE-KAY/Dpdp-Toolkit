@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 145 20% 10%;
+
+    --card: 0 0% 99%;
+    --card-foreground: 145 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 145 20% 10%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 5% 95%;
+    --secondary-foreground: 145 20% 10%;
+
+    --muted: 145 5% 96%;
+    --muted-foreground: 145 10% 45%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 145 5% 88%;
+    --input: 145 5% 88%;
+    --ring: 142 76% 36%;
+
+    --radius: 0.25rem;
+
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 145 10% 30%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 142 40% 95%;
+    --sidebar-accent-foreground: 145 20% 10%;
+    --sidebar-border: 145 5% 90%;
+    --sidebar-ring: 142 76% 36%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    font-family: 'Geist Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  .dark {
+    --background: 145 10% 7%;
+    --foreground: 145 10% 98%;
+
+    --card: 145 10% 9%;
+    --card-foreground: 145 10% 98%;
+
+    --popover: 145 10% 9%;
+    --popover-foreground: 145 10% 98%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 8% 14%;
+    --secondary-foreground: 145 10% 98%;
+
+    --muted: 145 8% 14%;
+    --muted-foreground: 145 5% 55%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 145 5% 18%;
+    --input: 145 5% 18%;
+    --ring: 142 76% 36%;
+
+    --sidebar-background: 145 10% 5%;
+    --sidebar-foreground: 145 5% 70%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 145 10% 12%;
+    --sidebar-accent-foreground: 145 10% 98%;
+    --sidebar-border: 145 5% 15%;
+    --sidebar-ring: 142 76% 36%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01";
+  }
+  
+  /* Sovereign transitions */
+  button, a, [role="button"] {
+    transition: all 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@layer utilities {
+  .font-mono-data {
+    font-family: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .text-system {
+    @apply text-[11px] uppercase tracking-widest font-mono-data;
+  }
+  
+  .sovereign-shadow {
+    box-shadow: 0 1px 2px 0 hsl(145 5% 20% / 0.05), 0 1px 3px 0 hsl(145 5% 20% / 0.04);
+  }
+  
+  .sovereign-shadow-dark {
+    box-shadow: 0 1px 2px 0 hsl(0 0% 0% / 0.3), 0 1px 3px 0 hsl(0 0% 0% / 0.2);
+  }
+
+  .fade-right-mask {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+}

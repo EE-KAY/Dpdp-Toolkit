@@ -1,0 +1,55 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import AppLayout from "@/components/AppLayout";
+import DashboardPage from "@/pages/DashboardPage";
+import DataInventoryPage from "@/pages/DataInventoryPage";
+import DataAccessPage from "@/pages/DataAccessPage";
+import RequestsPage from "@/pages/RequestsPage";
+import DataProtectionPage from "@/pages/DataProtectionPage";
+import ConsentPage from "@/pages/ConsentPage";
+import RetentionPage from "@/pages/RetentionPage";
+import IncidentsPage from "@/pages/IncidentsPage";
+import ThirdPartiesPage from "@/pages/ThirdPartiesPage";
+import AuditPage from "@/pages/AuditPage";
+import InfrastructurePage from "@/pages/InfrastructurePage";
+import SettingsPage from "@/pages/SettingsPage";
+import NotFound from "@/pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard/*" element={<DashboardPage />} />
+              <Route path="/access-data/*" element={<DataAccessPage />} />
+              <Route path="/data-inventory/*" element={<DataInventoryPage />} />
+              <Route path="/requests/*" element={<RequestsPage />} />
+              <Route path="/protection/*" element={<DataProtectionPage />} />
+              <Route path="/consent/*" element={<ConsentPage />} />
+              <Route path="/retention/*" element={<RetentionPage />} />
+              <Route path="/incidents/*" element={<IncidentsPage />} />
+              <Route path="/third-parties/*" element={<ThirdPartiesPage />} />
+              <Route path="/audit/*" element={<AuditPage />} />
+              <Route path="/infrastructure/*" element={<InfrastructurePage />} />
+              <Route path="/settings/*" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppLayout>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
+);
+
+export default App;
