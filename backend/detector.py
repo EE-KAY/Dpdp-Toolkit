@@ -8,16 +8,29 @@ def detect_names(text):
     doc = nlp(text)
     names = []
 
-    blacklist = {"email", "phone", "contact", "address", "number", "aadhar no", "aadhaar number", "aadhar num", "pan number", "ip address", "card number", "credit card"}
+    blacklist = {
+        "email", "phone", "contact", "address", "aadhar number", "pan number", "credit card", "card number", "ltd", "pvt", "company"
+    }
 
     for ent in doc.ents:
         if ent.label_ == "PERSON":
             name = ent.text.strip()
 
+            name_lower = name.lower()
+
+            if any(char.isdigit() for char in name):
+                continue
+
+            if not name.replace(" ", "").isalpha():
+                continue
+
             if len(name.split()) < 2:
                 continue
 
-            if name.lower() in blacklist:
+            if any(word in name_lower for word in blacklist):
+                continue
+
+            if name.isupper():
                 continue
 
             names.append({"type": "Name", "value": name})
