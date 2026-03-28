@@ -1,41 +1,51 @@
-from detector import detect_pii_full
-from extractor import get_all_files, extract_content, get_file_type
-import os
-import json
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Dict
+from fastapi.middleware.cors import CORSMiddleware
 
-def run_scanner(folder_path):
+from detector import detect_pii_full
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],
+)
+
+class FileData(BaseModel):
+    name: str
+    content: str
+
+@app.post("/scan")
+async def scan_files(files: List[FileData]):
     results = []
 
-    files = get_all_files(folder_path)
+    for file in files:
+        file_data = {
+            "file": file.name,
+            "content": file.content
+        }
 
-    for file_path in files:
-        file_type = get_file_type(file_path)
-        content = extract_content(file_path, file_type)
+        pii_result = detect_pii_full(file_data)["pii"]
+        pii_flags = {
+            "Name": False,
+            "Phone": False,
+            "Email": False,
+            "Credit Card": False,
+            "Aadhaar": False,
+            "PAN": False,
+            "IP Address": False
+        }
 
-        if content is not None:
-            file_data = {
-                "file": os.path.basename(file_path),
-                "path": file_path,
-                "type": file_type,
-                "content": content
-            }
+        for item in pii_result:
+            pii_flags[item["type"]] = True
 
-            pii_result = detect_pii_full(file_data)["pii"]
+        results.append({
+            "file": file.name,
+            "pii": pii_flags
+        })
 
-            results.append({
-                **file_data,
-                "pii": pii_result
-            })
-
-    return results  
-
-if __name__ == "__main__":
-    folder = "data"
-    output = run_scanner(folder)
-
-    os.makedirs("output", exist_ok=True)
-
-    with open("output/result.json", "w") as f:
-        json.dump(output, f, indent=4)
-
-    print("Scanning and detection complete!")
+    return {"results": results}

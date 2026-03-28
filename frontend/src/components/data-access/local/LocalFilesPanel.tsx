@@ -23,6 +23,7 @@ import {
   Music,
   Eye,
 } from "lucide-react";
+import { scanFiles as scanFilesAPI } from "../../../api/real";
 
 interface FileEntry {
   name: string;
@@ -305,7 +306,7 @@ export default function LocalFilesPanel() {
           const name = remainder;
           if (inferred[key]) continue;
           inferred[key] = {
-            name,
+            name, 
             path: key,
             selected: true,
             expanded: false,
@@ -410,11 +411,12 @@ export default function LocalFilesPanel() {
       return next;
     });
   }, []);
-
+  const [piiResults, setPiiResults] = useState<any[]>([]);
   const scanFiles = useCallback(async () => {
     setScanning(true);
     setScannedFiles([]);
     setStats(null);
+    
     setDirProgress({});
     setFileListLimit(100);
     lastProgressUpdateRef.current = 0;
@@ -634,6 +636,30 @@ export default function LocalFilesPanel() {
       }
 
       setScannedFiles(allFiles);
+
+      //sending to backend 
+      const filesToSend = [];
+
+      for (const f of allFiles) {
+        if (!f.handle) continue;
+
+        try {
+          const blob = await f.handle.getFile();
+          const text = await blob.text();
+
+          filesToSend.push({
+            name: f.name,
+            content: text,
+          });
+        } catch {}
+      }
+
+      // Call API
+      const data = await scanFilesAPI(filesToSend); 
+      console.log("PII RESULTS:", data); 
+      setPiiResults(data.results);
+
+
       setStats({ total: allFiles.length, byType, totalSize });
       setFileListLimit(Math.min(100, allFiles.length));
     } catch {
@@ -845,6 +871,18 @@ export default function LocalFilesPanel() {
     </div>
   );
 
+  const piiStats = useMemo(() => { 
+    const summary: Record<string, number> = {}; 
+    for (const r of piiResults) { 
+      for (const [k, v] of Object.entries(r.pii)) { 
+        if (v) { 
+          summary[k] = (summary[k] || 0) + 1; 
+        } 
+      } 
+    } 
+    return summary; 
+  }, [piiResults]);
+  
   if (!supportsAPI) {
     return (
       <div className="bg-card border border-border rounded-sm p-6 text-center space-y-2">
@@ -1078,6 +1116,83 @@ export default function LocalFilesPanel() {
             </div>
           </div>
 
+          {piiResults.length > 0 && ( 
+            <div className="bg-card border border-border rounded-sm overflow-hidden"> 
+              <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between"> 
+                <h3 className="text-[13px] font-semibold text-foreground"> 
+                  PII Detection Results 
+                </h3> 
+                <span className="text-[11px] text-muted-foreground"> 
+                  {piiResults.length} files scanned 
+                </span> 
+              </div> 
+              <div className="max-h-[300px] overflow-y-auto"> 
+                <table className="w-full text-[12px]"> 
+                  <thead className="sticky top-0 bg-card z-10"> 
+                    <tr className="border-b border-border"> 
+                      <th className="text-left px-4 py-2 text-[11px] uppercase text-muted-foreground"> 
+                        File 
+                      </th> 
+                      <th className="text-left px-4 py-2 text-[11px] uppercase text-muted-foreground"> 
+                        Detected PII 
+                      </th> 
+                      <th className="text-right px-4 py-2 text-[11px] uppercase text-muted-foreground"> 
+                        Risk 
+                      </th> 
+                    </tr> 
+                  </thead> 
+                  <tbody className="divide-y divide-border"> 
+                    {piiResults.map((r, i) => { 
+                      const detected = Object.entries(r.pii) 
+                      .filter(([_, v]) => v) 
+                      .map(([k]) => k); 
+                      
+                      const riskLevel = 
+                      detected.length === 0 
+                      ? "Low" 
+                      : detected.length <= 2 
+                      ? "Medium" 
+                      : "High"; 
+                      return ( 
+                      <tr key={i} className="hover:bg-muted/20"> 
+                      <td className="px-4 py-2 font-mono text-foreground"> 
+                        {r.file} 
+                      </td> 
+                      <td className="px-4 py-2"> 
+                        {detected.length === 0 ? ( 
+                          <span className="text-muted-foreground text-[11px]"> 
+                          No PII found 
+                          </span> ) 
+                          : 
+                        (<div className="flex flex-wrap gap-1"> 
+                        {detected.map((type) => ( 
+                          <span key={type} className="px-2 py-0.5 text-[10px] bg-muted rounded text-foreground" > 
+                          {type} 
+                          </span> 
+                        ))} 
+                        </div> 
+                      )} 
+                      </td> 
+                      
+                      {/* Risk Badge */} 
+                      <td className="px-4 py-2 text-right"> 
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold
+                          ${ 
+                            riskLevel === "Low" 
+                            ? "bg-green-500/10 text-green-600" 
+                            : riskLevel === "Medium" 
+                            ? "bg-yellow-500/10 text-yellow-600" 
+                            : "bg-red-500/10 text-red-600" }`}> 
+                            {riskLevel} 
+                        </span> 
+                      </td> 
+                      </tr> ); 
+                    })} 
+                    </tbody> 
+                  </table> 
+                </div> 
+              </div> 
+            )}
           <div className="bg-card border border-border rounded-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/30">
               <h3 className="text-[13px] font-semibold text-foreground">
