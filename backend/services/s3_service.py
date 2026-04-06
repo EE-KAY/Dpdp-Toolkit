@@ -1,1 +1,0 @@
-# will use when actual s3 connection is implemented, for now we are using mock service
