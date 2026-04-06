@@ -18,6 +18,7 @@ import {
   Music,
 } from "lucide-react";
 import { scanFiles as scanFilesAPI } from "../../../api/local";
+import { buildScanPayloadEntry, extractTextForScan } from "./fileTextParsers";
 import LocalDirectorySelector from "./LocalDirectorySelector";
 import LocalScanResults from "./LocalScanResults";
 
@@ -862,10 +863,15 @@ export default function LocalFilesPanel() {
 
       await runQueue();
 
+      const prevPiiMap = new Map<string, any>(
+        piiResults.map((r: any) => [r.file, r]),
+      );
+
       // determine new/kept files and merge with prior scans for active roots
       const currentMap = new Map(allFiles.map((f) => [f.path, f]));
 
       const newFiles = allFiles.filter((f) => !prevMap.has(f.path));
+      const filesNeedingScan = allFiles.filter((f) => !prevPiiMap.has(f.name));
 
       // start with previously scanned files still under active roots
       const mergedMap = new Map<string, FileEntry>();
@@ -881,21 +887,24 @@ export default function LocalFilesPanel() {
 
       const keptFiles = Array.from(mergedMap.values());
 
-      // enrich metadata only for new files and prepare payload
+      // enrich metadata only for files that still need PII results
       const filesToSend = [];
-      for (const f of newFiles) {
+      for (const f of filesNeedingScan) {
         if (!f.handle) continue;
         try {
           const blob = await f.handle.getFile();
           f.size = blob.size;
-          if (f.extension === "pdf" || f.extension === "docx") continue; // skip sending PDFs for now
 
-          const text = await blob.text();
-          filesToSend.push({
+          const payloadEntry = await buildScanPayloadEntry({
             name: f.name,
-            content: text,
+            extension: f.extension,
+            blob,
           });
-        } catch {}
+
+          if (payloadEntry) filesToSend.push(payloadEntry);
+        } catch (err) {
+          console.error("Failed to parse file for scan payload:", f.name, err);
+        }
       }
 
       const mergedFiles = Array.from(
@@ -924,11 +933,17 @@ export default function LocalFilesPanel() {
 
       setScannedFiles(mergedFiles);
 
-      const prevPiiMap = new Map<string, any>(
-        piiResults.map((r: any) => [r.file, r]),
-      );
-
       // Call API only with new files
+      console.log("[LocalScan] Prepared payload entries", {
+        count: filesToSend.length,
+        names: filesToSend.map((f) => f.name),
+        sample: filesToSend.slice(0, 2).map((f) => ({
+          name: f.name,
+          chars: f.content.length,
+          preview: f.content.slice(0, 200),
+        })),
+      });
+
       const data = await scanFilesAPI(filesToSend);
       console.log("PII RESULTS:", data);
 
@@ -951,7 +966,7 @@ export default function LocalFilesPanel() {
       setScanning(false);
       setScanProgress("");
     }
-  }, [rootDirs, scannedFiles]);
+  }, [rootDirs, scannedFiles, treeFiles, piiResults]);
 
   const getFileIcon = (name: string) => {
     const cat = categorizeFile(name);
@@ -983,6 +998,10 @@ export default function LocalFilesPanel() {
         const isPdf =
           mime === "application/pdf" ||
           file.name.toLowerCase().endsWith(".pdf");
+        const isDocx =
+          mime ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+          file.name.toLowerCase().endsWith(".docx");
 
         if (isImage) {
           const url = URL.createObjectURL(blob);
@@ -1001,6 +1020,19 @@ export default function LocalFilesPanel() {
             url,
             mime,
             kind: "pdf",
+          });
+        } else if (isDocx) {
+          const content = await extractTextForScan({
+            name: file.name,
+            extension: file.extension,
+            blob,
+          });
+          setPreview({
+            name: file.name,
+            path: file.path,
+            content: content || "[No extractable text found in document]",
+            mime,
+            kind: "text",
           });
         } else {
           const LIMIT = 300000; // ~300 KB for quick text previews
